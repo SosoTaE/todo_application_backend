@@ -31,7 +31,6 @@ Session = sessionmaker(bind=engine)
 
 # Todo CRUD operations
 def add_todo(title, category, description=None, due_date=None):
-    """Add a new todo item"""
     session = Session()
     new_todo = Todo(
         title=title,
@@ -69,18 +68,6 @@ def get_incomplete_todos():
     session.close()
     return todos
 
-def mark_todo_as_completed(todo_id):
-    session = Session()
-    todo = session.query(Todo).filter_by(id=todo_id).first()
-    if todo:
-        todo.is_completed = True
-        session.commit()
-        success = True
-    else:
-        success = False
-    session.close()
-    return success
-
 def update_todo(todo_id, title=None, category=None, description=None, due_date=None):
     session = Session()
     todo = session.query(Todo).filter_by(id=todo_id).first()
@@ -117,20 +104,67 @@ def get_paginated_todos(category, offset=0, limit=10):
     session = Session()
 
     try:
-        # Build the base query
         query = session.query(Todo)
 
-        # Apply category filter if needed
         if category != 'all':
             query = query.filter_by(category=category)
 
-        # Get total count before pagination
         total_count = query.count()
 
-        # Apply pagination
         todos = query.order_by(Todo.created_at.desc()).offset(offset).limit(limit).all()
 
         return todos, total_count
+
+    finally:
+        session.close()
+
+
+def get_categories_with_task_counts():
+    session = Session()
+
+    try:
+        # Get all unique categories
+        query = session.query(Todo.category).distinct().filter(Todo.category != None)
+        categories = [category[0] for category in query.all()]
+
+        result = []
+        for category in categories:
+            # Get total count for this category
+            total_count = session.query(Todo).filter_by(category=category).count()
+
+            # Get completed count for this category
+            completed_count = session.query(Todo).filter_by(
+                category=category,
+                is_completed=True
+            ).count()
+
+            result.append({
+                'name': category,
+                'total_tasks': total_count,
+                'completed_tasks': completed_count
+            })
+
+        # Sort by category name
+        result.sort(key=lambda x: x['name'])
+
+        return result
+
+    finally:
+        session.close()
+
+
+def mark_todo_completion(todo_id, is_completed=True):
+    session = Session()
+
+    try:
+        todo = session.query(Todo).filter_by(id=todo_id).first()
+
+        if todo:
+            todo.is_completed = is_completed
+            session.commit()
+            return True
+        else:
+            return False
 
     finally:
         session.close()
