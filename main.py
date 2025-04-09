@@ -23,6 +23,7 @@ def update_todo_route(id):
 @app.route("/api/todo/<int:id>", methods=["DELETE"])
 def delete_todo_route(id):
     return delete_todos(id)
+
 @app.route('/ping', methods=['GET'])
 def ping_route():
     return ping()
