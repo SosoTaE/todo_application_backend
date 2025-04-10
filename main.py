@@ -9,6 +9,7 @@ from routes.delete_todo import delete_todos
 from routes.get_categories import get_categories
 from routes.complete_todo import complete_todo
 from routes.login import login
+from routes.get_name import get_name
 
 from middleware.auth import authenticate_request
 
@@ -26,6 +27,10 @@ def login_route():
 @app.before_request
 def before_request():
     return authenticate_request(config)
+
+@app.route("/api/name", methods=['GET'])
+def get_name_route():
+    return get_name(config)
 
 @app.route('/api/todos')
 def get_todo_route():
